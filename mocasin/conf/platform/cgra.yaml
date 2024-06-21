@@ -1,0 +1,14 @@
+_target_: mocasin.platforms.cgra.DesignerPlatformCGRA
+# Once hydra 1.1 rolls out with recursive instantiation,
+# we should replace this and recursively instantiate
+# the processors. See:
+# https://github.com/facebookresearch/hydra/issues/566
+cgra:
+  _target_: mocasin.platforms.platformDesigner.genericProcessor
+  type : 'proc_type_0'
+  frequency : 1000000
+  static_power: 0.1403
+  dynamic_power: 0.3202
+name: 'cgra'
+# symmetries_json: "${mocasin_path:platforms/symmetries/odroid.json}"
+# embedding_json: "${mocasin_path:platforms/embeddings/odroid.json}"
