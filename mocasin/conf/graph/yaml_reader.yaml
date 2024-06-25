@@ -1,0 +1,3 @@
+_target_: mocasin.yaml.app.YamlGraph
+name: null
+yaml_file: "${yaml.file}"
