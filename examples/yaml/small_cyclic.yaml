@@ -16,15 +16,18 @@ nodes:
         type: in
       - name: product
         type: out
-    exec_cycles: 1
+    exec_cycles: 2
   - name: add
     ports:
       - name: in1
         type: in
       - name: in2
         type: in
-      - name: sum
+      - name: sum0
         type: out
+      - name: sum1
+        type: out
+    exec_cycles: 1
   - name: sink
     ports:
       - name: mac
@@ -48,11 +51,12 @@ channels:
     dstPort: in1
   - name: ch3
     srcNode: add
-    srcPort: sum
+    srcPort: sum0
     dstNode: add
     dstPort: in2
+    initToken:
   - name: ch4
     srcNode: add
-    srcPort: sum
+    srcPort: sum1
     dstNode: sink
     dstPort: mac
