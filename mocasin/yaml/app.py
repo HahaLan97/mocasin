@@ -19,7 +19,7 @@ class YamlGraph(DataflowGraph):
         name (str): the name to use for the application
     """
 
-    def __init__(self, yaml_file, name):
+    def __init__(self, yaml_file):
 
         log.info("Start parsing application from YAML")
 
@@ -31,6 +31,8 @@ class YamlGraph(DataflowGraph):
 
         for node in self.yaml_graph.nodes:
             n_name = node.name
+            if not self.validate_node(node):
+                raise RuntimeError(f"Node {n_name} is missing expected keys")
             log.debug(f"Add process {name}.{n_name}")
             self.add_process(DataflowProcess(n_name))
 
@@ -56,6 +58,15 @@ class YamlGraph(DataflowGraph):
         
         log.info("Done parsing graph from YAML")
     
+    def validate_node(self, node):
+        if 'ports' not in node:
+            log.error(f"Node {node.name} doesn't have 'ports' key")
+            return False
+        if 'exec_cycles' not in node:
+            log.error(f"Node {node.name} doesn't have 'exec_cycles' key")
+            return False
+        return True
+    
     def validate_channel(self, channel):
         if not self.validate_port(channel.srcNode, channel.srcPort, 'out'):
             log.error(f"Invalid srcPort {channel.srcPort} for srcNode {channel.srcNode}")
@@ -79,4 +90,3 @@ class YamlGraph(DataflowGraph):
             return False
         
         return True
-        
