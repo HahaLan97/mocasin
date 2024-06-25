@@ -1,0 +1,31 @@
+graph:
+  name: test
+nodes:
+  - name: src
+    ports:
+      - name: output
+        type: out
+    exec_cycles: 1
+  - name: compute
+    ports:
+      - name: input
+        type: in
+      - name: output
+        type: out
+    exec_cycles: 1
+  - name: sink
+    ports:
+      - name: input
+        type: in
+    exec_cycles: 1
+channels:
+  - name: ch0
+    srcNode: src
+    srcPort: output
+    dstNode: compute
+    dstPort: input
+  - name: ch1
+    srcNode: compute
+    srcPort: output
+    dstNode: sink
+    dstPort: input

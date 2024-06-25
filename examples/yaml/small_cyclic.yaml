@@ -1,0 +1,58 @@
+graph:
+  name: test
+nodes:
+  - name: src
+    ports:
+      - name: op1
+        type: out
+      - name: op2
+        type: out
+    exec_cycles: 1
+  - name: mul
+    ports:
+      - name: in1
+        type: in
+      - name: in2
+        type: in
+      - name: product
+        type: out
+    exec_cycles: 1
+  - name: add
+    ports:
+      - name: in1
+        type: in
+      - name: in2
+        type: in
+      - name: sum
+        type: out
+  - name: sink
+    ports:
+      - name: mac
+        type: in
+    exec_cycles: 1
+channels:
+  - name: ch0
+    srcNode: src
+    srcPort: op1
+    dstNode: mul
+    dstPort: in1
+  - name: ch1
+    srcNode: src
+    srcPort: op2
+    dstNode: mul
+    dstPort: in2
+  - name: ch2
+    srcNode: mul
+    srcPort: product
+    dstNode: add
+    dstPort: in1
+  - name: ch3
+    srcNode: add
+    srcPort: sum
+    dstNode: add
+    dstPort: in2
+  - name: ch4
+    srcNode: add
+    srcPort: sum
+    dstNode: sink
+    dstPort: mac
