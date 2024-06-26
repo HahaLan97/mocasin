@@ -3,12 +3,14 @@ import logging
 
 log = logging.getLogger(__name__)
 
-from mocasin.platforms.topologies import meshTopology
 from mocasin.common.platform import (
     Platform,
     Primitive,
     Processor,
-    CommunicationPhase
+    CommunicationPhase,
+    CommunicationResource,
+    CommunicationResourceType,
+    FrequencyDomain
 )
 from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
@@ -46,6 +48,9 @@ class CGRAPlatformDesigner(PlatformDesigner):
                 pe_idx = row * n + col
                 pe = pes[pe_idx]
 
+                # Connect to the node itself
+                self.connectComponents(pe, pe, bidirectional = False)
+
                 # Connect nodes in the same row bidirectionally
                 if col < n - 1:
                     next_pe = pes[pe_idx + 1]
@@ -54,7 +59,24 @@ class CGRAPlatformDesigner(PlatformDesigner):
                 # Connect nodes in different rows (north to south) unidirectionally
                 if row < n - 1:
                     south_pe = pes[pe_idx + n]
-                    self.connectComponents(pe, south_pe, bidirectional = False)
+                    self.connectComponents(pe, south_pe, bidirectional = True)
+    
+    def addPhysicalLink(self, physicalLink):
+        adjacencyList = self.adjacentList
+
+        for key in adjacencyList:
+            for target in adjacencyList[key]:
+                name = "pl_" + str(target) + "_" + str(key)
+                communicationResource = CommunicationResource(
+                    name,
+                    physicalLink._frequency_domain,
+                    physicalLink._resource_type,
+                    physicalLink._read_latency,
+                    physicalLink._write_latency,
+                    physicalLink._read_throughput,
+                    physicalLink._write_throughput,
+                )
+                self.platform.add_communication_resource(communicationResource)
     
     def generatePrimitivesForPes(self, pes):
         platform = self.platform
@@ -63,20 +85,23 @@ class CGRAPlatformDesigner(PlatformDesigner):
         for pe in pes:
             producerList = {}
             consumerList = {}
-            # print(adjacencyList[pe])
             for element in adjacencyList[pe]:
-                resources = [pe]
-                producerList[pe] = resources
-                consumerList[pe] = resources
-                consumerList[element] = resources
-            # print(producerList)
-            # print(consumerList)
+                producerList[pe] = pe
+                consumerList[element] = pe
             prim = Primitive(f"prim_{pe.name}")
+            produce_resources = []
             for pe, resources in producerList.items():
-                produce = CommunicationPhase("produce", resources, "write")
+                pl_name = "pl_" + str(resources) + "_" + str(pe)
+                pl = self.platform.find_communication_resource(pl_name)
+                produce_resources.append(pl)
+                produce = CommunicationPhase("produce", produce_resources, "write")
                 prim.add_producer(pe, [produce])
+            comsume_resources = []
             for pe, resources in consumerList.items():
-                consume = CommunicationPhase("consume", resources, "read")
+                pl_name = "pl_" + str(resources) + "_" + str(pe)
+                pl = self.platform.find_communication_resource(pl_name)
+                comsume_resources.append(pl)
+                consume = CommunicationPhase("consume", comsume_resources, "read")
                 prim.add_consumer(pe, [consume])
             platform.add_primitive(prim)
 
@@ -119,17 +144,17 @@ class makeCGRA(cluster):
             raise RuntimeError("Number of PEs must be square!")
 
         cgraParams = peParams(cgra)
-        bramParams = l1Params(cgra.frequency_domain.frequency)
-        imParams = InMemParams()
-        omParams = OutMemParams()
+        # bramParams = l1Params(cgra.frequency_domain.frequency)
+        # imParams = InMemParams()
+        # omParams = OutMemParams()
 
         designer.setSchedulingPolicy("FIFO", 1000)
 
         cluster_cgra = cluster(f"cluster_cgra", designer)
         self.addCluster(cluster_cgra)
 
-        inMem = cluster_cgra.addStorage("IN_MEM", *imParams)
-        outMem = cluster_cgra.addStorage("OUT_MEM", *omParams)
+        # inMem = cluster_cgra.addStorage("IN_MEM", *imParams)
+        # outMem = cluster_cgra.addStorage("OUT_MEM", *omParams)
         pes = []
         for i in range(num_pes):
             pe = cluster_cgra.addPeToCluster(f"pe{i:02d}", *cgraParams)
@@ -137,6 +162,16 @@ class makeCGRA(cluster):
         
         designer.connectCgraPes(pes, size)
 
+        physicalLink = CommunicationResource(
+            "electric",
+            FrequencyDomain("fd_electric", 250000000.0),
+            CommunicationResourceType.PhysicalLink,
+            0,
+            0,
+            100,
+            60,
+        )
+        designer.addPhysicalLink(physicalLink)
         designer.generatePrimitivesForPes(pes)
 
 def peParams(processor):
@@ -150,13 +185,13 @@ def peParams(processor):
     )
 
 
-def l1Params(freq):
-    return (1, 1, 8, 8, freq)
+# def l1Params(freq):
+#     return (1, 1, 8, 8, freq)
 
-# Need to know the exact parameters from UPM
-def InMemParams():
-    return (120, 120, 8, 8, 933000000.0)
+# # Need to know the exact parameters from UPM
+# def InMemParams():
+#     return (120, 120, 8, 8, 933000000.0)
 
-def OutMemParams():
-    return (120, 120, 8, 8, 933000000.0)
+# def OutMemParams():
+#     return (120, 120, 8, 8, 933000000.0)
 
