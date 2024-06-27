@@ -55,8 +55,10 @@ class YamlTrace(DataflowTrace):
                             channel = c
                             break
                     rule.writes[channel.name] = 1
-                    if 'initToken' in channel:
-                        rule.initial_writes[channel.name] = 1
+                    if channel.initToken > 0:
+                        rule.initial_writes[channel.name] = channel.initToken
+                    elif channel.initToken < 0:
+                        raise RuntimeError("Number of initial tokens must greater than or equal to 0")
                 else:
                     channel = None
                     for c in graph.channels:
