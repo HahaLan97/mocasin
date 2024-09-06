@@ -190,9 +190,10 @@ class SimulationManager:
     def _append_mapping_metadata(self, mapping, sim_res):
         # save execution time and energy in ms and mJ, respectively
         mapping.metadata.exec_time = sim_res.exec_time / 1000000000.0
+        print(sim_res)
         mapping.metadata.energy = None
         if sim_res.dynamic_energy is not None:
-            mapping.metadata.energy = sim_res.dynamic_energy / 1000000000.0
+            mapping.metadata.energy = (sim_res.dynamic_energy + sim_res.static_energy) / 1000000000.0
 
     def _store_simulation_results(
         self, graph, mappings, tup, lookups, simulated, update_metadata

@@ -160,7 +160,7 @@ class _GeneticMapperEngine:
         if Objectives.EXEC_TIME in self.config.objectives:
             result.append(simres.exec_time)
         if Objectives.ENERGY in self.config.objectives:
-            result.append(simres.dynamic_energy)
+            result.append(simres.dynamic_energy+simres.static_energy)
         if Objectives.RESOURCES in self.config.objectives:
             mapping_obj = self.representation.fromRepresentation(list(mapping))
             resource_dict = mapping_obj.to_resourceDict()
